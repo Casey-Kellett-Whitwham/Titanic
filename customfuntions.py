@@ -26,12 +26,21 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.svm import SVC
 import multiprocessing
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
 def missing(full_data):
 
     missing = full_data.isnull().sum()
     missing_df = pd.DataFrame(missing, columns=['Missing Values'])
     return missing_df
+
+def load_processed_data():
+    X_train, X_test, y_train, y_test,full_data = load_titanic_data()
+
+    X_train_prepped, X_test_prepped, y_train_prepped, y_test_prepped = pipeline_prep(X_train, X_test, y_train, y_test,poly_degree = 2)
+    return X_train_prepped, X_test_prepped, y_train_prepped, y_test_prepped
+
 
 
 def load_titanic_data():
@@ -95,6 +104,9 @@ def pipeline_prep(Xtrain, Xtest, ytrain, ytest,
     
     Xtrain_prepared, ytrain_prepared = handle_outlier(Xtrain_prepared, ytrain)
 
+    ytrain_prepared = ytrain_prepared.values.reshape(-1, 1)
+    ytest = ytest.values.reshape(-1, 1) 
+
     ytrain_scaler = MinMaxScaler()
     ytrain_prepared = ytrain_scaler.fit_transform(ytrain_prepared)
      
@@ -103,6 +115,7 @@ def pipeline_prep(Xtrain, Xtest, ytrain, ytest,
      
     return Xtrain_prepared, Xtest_prepared, ytrain_prepared, ytest_prepared
 
+
 def get_outlier_indices(X):
     model = LocalOutlierFactor()
     return model.fit_predict(X) 
@@ -110,3 +123,17 @@ def get_outlier_indices(X):
 def handle_outlier(X, y):
     outlier_ind = get_outlier_indices(X)
     return X[outlier_ind == 1], y[outlier_ind == 1]
+
+def metrics(X_test,y_test,model):
+    y_test_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_test_pred)
+    precision = precision_score(y_test, y_test_pred)
+    recall = recall_score(y_test, y_test_pred)
+    f1 = f1_score(y_test, y_test_pred)
+    conf_matrix = confusion_matrix(y_test, y_test_pred)
+
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall: {recall:.4f}")
+    print(f"F1 Score: {f1:.4f}")
+        
